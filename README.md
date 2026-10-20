@@ -174,7 +174,7 @@ The dice and the board in `web-src/assets/` are exported from procedural Blender
 
 ## Credits and licence
 
-Made by Piotr 'Pete' Romanczyk. Built with AI coding assistants (Claude Code and OpenAI Codex). The dice designs started from AI-generated concept images and were then modelled procedurally in Blender.
+Made by Piotr 'Pete' Romanczyk in collaboration with ReadyM, as part of the OB:MP project. Built with AI coding assistants (Claude Code and OpenAI Codex). The dice designs started from AI-generated concept images and were then modelled procedurally in Blender.
 
 RpRoll is licensed under the [MIT License](LICENSE). Third-party parts keep their own licences, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md):
 
@@ -182,4 +182,4 @@ RpRoll is licensed under the [MIT License](LICENSE). Third-party parts keep thei
 - Cinzel by The Cinzel Project Authors (SIL Open Font License 1.1).
 - Kingthings Petrock and Petrock Light by Kevin King, shipped unchanged with his EULA.
 
-RpRoll is an independent community mod for OB:MP. It is not made, endorsed or supported by ReadyM, and it is not affiliated with Bethesda Softworks or ZeniMax. The Elder Scrolls and Oblivion are trademarks of ZeniMax Media Inc.; the race and faction names of the dice sets come from the games. No game files or game assets are included.
+RpRoll is not affiliated with Bethesda Softworks or ZeniMax. The Elder Scrolls and Oblivion are trademarks of ZeniMax Media Inc.; the race and faction names of the dice sets come from the games. No game files or game assets are included.
