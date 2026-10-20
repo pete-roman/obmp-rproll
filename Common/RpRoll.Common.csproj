@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared by both halves: the RPC contracts for the visual d20. Packed into client\ and server\ alike, because
+    contracts must be identical on both sides. Shared settings in ..\Directory.Build.props.
+  -->
+
+  <PropertyGroup>
+    <AssemblyName>RpRoll.Common</AssemblyName>
+    <RootNamespace>RpRoll.Common</RootNamespace>
+    <ModSide>both</ModSide>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ReadyM.SDK.Oblivion.Common" Version="$(ObmpSdkVersion)" />
+  </ItemGroup>
+
+</Project>

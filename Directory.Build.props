@@ -1,0 +1,20 @@
+<Project>
+
+  <!--
+    Shared by Server\ and Client\. The SDK and chat come from NuGet (public OB:MP 1.0 packages).
+    Keep the two versions below matched to the OB:MP server you run the mod on.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Version>0.7.0</Version>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <ObmpSdkVersion>1.0.0-rc.2</ObmpSdkVersion>
+    <ObmpChatVersion>1.0.0-rc.3</ObmpChatVersion>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+{
+  "name": "rproll-web",
+  "private": true,
+  "description": "RpRoll dice tray page. node build.mjs writes ../Client/web (the mod) and ../bin/preview (one-file preview).",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "puppeteer-core": "^25.10.0",
+    "three": "0.185.1"
+  }
+}

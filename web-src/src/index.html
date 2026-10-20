@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RP Roll: dice board</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="loading" data-focus="dice" data-theme="light">
+  <canvas id="view"></canvas>
+  <div id="tags"></div>
+
+  <div class="board-heading">Dice board</div>
+  <div id="banner" aria-live="polite"><span id="banner-text">Press <kbd>Space</kbd> to throw</span></div>
+
+  <section class="panel left">
+    <div class="panel-tabs" aria-label="Keyboard focus">
+      <span class="tab-dice"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="8" cy="8" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="16" cy="16" r="1"/></svg>Dice</span>
+      <span class="tab-sets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17V4h12M8 20V8h12v12z"/></svg>Sets</span>
+      <small><kbd>Tab</kbd></small>
+    </div>
+    <h1>Dice Tray</h1>
+    <div id="tray" class="section tray">
+      <div class="tile" data-kind="d6"><kbd class="key">1</kbd><img alt=""><div class="name">D6<small>Six-sided</small></div><span class="badge">0</span></div>
+      <div class="tile" data-kind="d10"><kbd class="key">2</kbd><img alt=""><div class="name">D10<small>Ten-sided</small></div><span class="badge">0</span></div>
+      <div class="tile" data-kind="d20"><kbd class="key">3</kbd><img alt=""><div class="name">D20<small>Twenty-sided</small></div><span class="badge">1</span></div>
+      <div class="tile" data-kind="d100"><kbd class="key">4</kbd><img alt=""><div class="name">D100<small>Tens, 10 to 100</small></div><span class="badge">0</span></div>
+    </div>
+    <p class="notation"><span id="notation">1d20</span><small id="count">the d20 waits for your pick</small></p>
+    <div class="capacity" aria-hidden="true"><span id="tray-capacity"></span></div>
+    <p class="section-help"><kbd>&uarr;</kbd><kbd>&darr;</kbd> Pick <kbd class="gap">&larr;</kbd><kbd>&rarr;</kbd> Fewer or more <span><kbd>5</kbd> Clear</span></p>
+
+    <h2>Dice Set</h2>
+    <div id="sets" class="section sets"></div>
+    <div class="set-card"><img id="set-portrait" alt=""><p class="setname"><b id="set-name"></b><span id="set-text"></span></p></div>
+    <p class="set-help"><kbd>Tab</kbd> Switch section <span><kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd> Choose</span></p>
+  </section>
+
+  <section class="panel right">
+    <div class="journal-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12v18H5zM8 7h6M8 11h6M8 15h4M3 6h4M3 12h4M3 18h4"/></svg><span>Journal</span></div>
+    <h1>Recent Rolls</h1>
+    <ol id="recent" class="hist"><li class="empty">No throws yet</li></ol>
+
+    <div class="legend">
+      <h2>Controls</h2>
+      <dl class="keys">
+        <dt><kbd>Home</kbd> <kbd>Esc</kbd></dt><dd>close the board</dd>
+        <dt><kbd>Space</kbd></dt><dd>throw the dice</dd>
+        <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></dt><dd>add a d6, d10, d20, d100</dd>
+        <dt><kbd>5</kbd></dt><dd>clear, back to one d20</dd>
+        <dt><kbd>Tab</kbd></dt><dd>dice or sets</dd>
+        <dt><kbd>&uarr;</kbd><kbd>&darr;</kbd></dt><dd>pick a die</dd>
+        <dt><kbd>&larr;</kbd><kbd>&rarr;</kbd></dt><dd>one fewer, one more</dd>
+        <dt><kbd>K</kbd></dt><dd>chat</dd>
+        <dt><kbd>M</kbd></dt><dd>sound <span id="sound-state">on</span></dd>
+        <dt><kbd>V</kbd></dt><dd>light or dark, now <span id="theme-state">light</span></dd>
+      </dl>
+      <p class="hint"><code>/roll 2d10</code> selects and throws two d10s. Players within 20 m see the result in chat. The board is yours alone.</p>
+    </div>
+  </section>
+
+  <footer class="throw">
+    <button id="throw" type="button"><kbd>Space</kbd> Throw dice</button>
+  </footer>
+
+  <div id="chat" hidden>
+    <ol id="chat-lines"></ol>
+    <input id="chat-entry" maxlength="240" placeholder="Say something, /roll 2d10 or /board" autocomplete="off">
+  </div>
+
+  <div id="mock" hidden>
+    <b>Preview</b> (no game: this panel plays the server)
+    <button type="button" data-mock="random">Random throw</button>
+    <label>First die <select id="mock-value"></select></label>
+    <button type="button" data-mock="forced">Throw this</button>
+    <label><input type="checkbox" id="mock-slow"> slow server</label>
+    <label><input type="checkbox" id="mock-refuse"> server refuses</label>
+    <label><input type="checkbox" id="mock-lose"> lose dice picks</label>
+    <button type="button" data-mock="toggle">Home</button>
+    <button type="button" data-mock="chat">K (chat)</button>
+  </div>
+
+  <div id="fatal" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# .NET build output
+bin/
+obj/
+TestResults/
+
+# the built board page (node web-src/build.mjs writes it) and npm packages
+Client/web/
+web-src/node_modules/
+
+# editors and OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+Thumbs.db
+.DS_Store

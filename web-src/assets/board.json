@@ -1,0 +1,8 @@
+{
+ "bowl_a": 7.0853,
+ "bowl_b": 7.2007,
+ "rim": 0.32,
+ "width": 20.0,
+ "floor": 0.0,
+ "note": "glTF axes, board centre at the origin. The bowl is an ellipse in x (bowl_a) and z (bowl_b); the cove rises to the rim between 0.975 and 1.04 of it."
+}

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Client side: roll results from chat are shown in the native HUD (works without CEF), and Home opens
+    the dice board page in web\ (built from ..\web-src).
+    Shared settings in ..\Directory.Build.props.
+  -->
+
+  <PropertyGroup>
+    <AssemblyName>RpRoll.Client</AssemblyName>
+    <RootNamespace>RpRoll.Client</RootNamespace>
+    <ModSide>client</ModSide>
+  </PropertyGroup>
+
+  <!-- The game and the chat mod already provide these assemblies, so only our own DLL goes into the mod folder. -->
+  <ItemGroup>
+    <PackageReference Include="ReadyM.SDK.Oblivion.Client" Version="$(ObmpSdkVersion)" />
+    <PackageReference Include="ReadyM.Oblivion.Chat.Client" Version="$(ObmpChatVersion)" />
+  </ItemGroup>
+
+  <!-- RPC contracts, packed into client\ (and server\) by the Common project itself. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Common\RpRoll.Common.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>

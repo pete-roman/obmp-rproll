@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Server side: /roll, the visual d20 RPC (and the roll-test.txt test hook). Shared settings in ..\Directory.Build.props. -->
+
+  <PropertyGroup>
+    <AssemblyName>RpRoll.Server</AssemblyName>
+    <RootNamespace>RpRoll.Server</RootNamespace>
+    <ModSide>server</ModSide>
+  </PropertyGroup>
+
+  <!-- The server already has these assemblies, so only our own DLL goes into the mod folder. -->
+  <ItemGroup>
+    <PackageReference Include="ReadyM.SDK.Oblivion.Server" Version="$(ObmpSdkVersion)" />
+    <PackageReference Include="ReadyM.Oblivion.Chat.Server" Version="$(ObmpChatVersion)" />
+  </ItemGroup>
+
+  <!-- The tests call the /roll handler directly, the way chat does. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="RpRoll.Tests" />
+  </ItemGroup>
+
+  <!-- RPC contracts, packed into server\ (and client\) by the Common project itself. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Common\RpRoll.Common.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>

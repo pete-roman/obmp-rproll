@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Common/">
+    <Project Path="Common/RpRoll.Common.csproj" />
+  </Folder>
+  <Folder Name="/Client/">
+    <Project Path="Client/RpRoll.Client.csproj" />
+  </Folder>
+  <Folder Name="/Server/">
+    <Project Path="Server/RpRoll.Server.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/RpRoll.Tests.csproj" />
+  </Folder>
+</Solution>

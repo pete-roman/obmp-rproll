@@ -1,0 +1,17 @@
+{
+  "uniqueId": "RpRoll",
+  "version": "0.7.0",
+  "name": "RP Roll",
+  "author": "Piotr 'Pete' Romanczyk",
+  "description": "/roll d6, d10, d20 and d100 for roleplay, up to 5 dice, shown to players within 20 m. Home or /board opens a dice board; Space or /roll throws the dice on it.",
+  "dependencies": [
+    {
+      "uniqueId": "OblivionMP.SDK",
+      "minimumVersion": "1.0.0"
+    },
+    {
+      "uniqueId": "OblivionMP.Chat",
+      "minimumVersion": "1.0.0"
+    }
+  ]
+}
