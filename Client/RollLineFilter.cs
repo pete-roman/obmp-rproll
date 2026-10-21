@@ -5,14 +5,15 @@ namespace RpRoll.Client;
 
 /// <summary>
 /// Recognises the exact roll line RpRoll.Server sends (its <c>RollChatFormat</c>; change both together):
-/// "Pete rolled 1d20 + 2d6: d20 [14], d6 [3], d6 [5] = 22". No SDK types, so the tests can use it directly.
+/// "Pete rolled 1d20 + 2d6: d20 [14], d6 [3], d6 [5] = 22", or for another mod "Pete rolled 5d20 for Lazy: ... = 47"
+/// (the reason as <c>RollChatFormat.CleanReason</c> leaves it). No SDK types, so the tests can use it directly.
 /// </summary>
 public static class RollLineFilter
 {
     private const string Die = @"d(?:6|10|20|100)";
 
     private static readonly Regex RollLine = new(
-        $@"^.+ rolled \d+{Die}(?: \+ \d+{Die})*: {Die} \[\d+\](?:, {Die} \[\d+\])* = \d+$",
+        $@"^.+ rolled \d+{Die}(?: \+ \d+{Die})*(?: for [\p{{L}}\p{{Nd}}' -]{{1,40}})?: {Die} \[\d+\](?:, {Die} \[\d+\])* = \d+$",
         RegexOptions.CultureInvariant);
 
     /// <summary>

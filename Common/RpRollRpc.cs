@@ -36,4 +36,11 @@ public static partial class RpRollRpc
     /// <summary>/roll with the board open: put these dice in the tray and throw them. All zero: throw the tray as it is.</summary>
     [ServerToClient]
     public static partial void TrayThrow(int d6, int d10, int d20, int d100);
+
+    /// <summary>
+    /// A roll the server already made for another mod (MESOL's traits): show these dice landing on these values, in a
+    /// small board that closes by itself, or on the board if it is open. <paramref name="reason"/> says what it was for.
+    /// </summary>
+    [ServerToClient]
+    public static partial void PresentRoll(string reason, int d6, int d10, int d20, int d100, int[] values);
 }

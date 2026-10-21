@@ -23,6 +23,7 @@ import { Sound } from './sound.js';
 
 const log = (...a) => console.info('[RpRoll]', ...a);
 const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SET_KEY = 'rproll.set';
 const THEME_KEY = 'rproll.theme';
 const PICK_KEY = 'rproll.tray';
@@ -122,21 +123,39 @@ shadowCatcher.position.y = 0.012;
 shadowCatcher.receiveShadow = true;
 scene.add(shadowCatcher);
 
+// Another mod's roll (MESOL's traits) shows as a small board in the bottom right of that mod's page (body.present).
+let presentMode = false;
+let presentReason = '';
+
+/** `n` different sets at random (all 12 are in the pool); a set repeats only past 12 dice. */
+function randomSets(n) {
+  const pool = SETS.map((s) => s.id);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return Array.from({ length: n }, (_, i) => pool[i % pool.length]);
+}
+
 function resize() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  // The canvas fills the window, or the small frame while showing another mod's roll (style.css sizes it).
+  const w = canvas.clientWidth || window.innerWidth;
+  const h = canvas.clientHeight || window.innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   // Fit the board (about 20 units across, 10.3 from the centre to the bark) between the panels, under the ribbon and
   // above the throw button. halfH is half the visible height at the board, in board units.
-  const panel = Math.min(Math.max(250, w * 0.21), 440) + w * 0.016;
+  const panel = presentMode ? 0 : Math.min(Math.max(250, w * 0.21), 440) + w * 0.016;
   const usableW = Math.max(200, w - 2 * panel - 40) / w;
-  const usableH = 0.78;
+  const usableH = presentMode ? 1.02 : 0.78; // a trait roll's small board: the board fills its tray
   const tilt = (30 * Math.PI) / 180;                           // from straight down
   const halfH = Math.max(10.4 / (camera.aspect * usableW), (10.4 * Math.cos(tilt) + 0.6) / usableH);
   const dist = halfH / Math.tan((camera.fov * Math.PI) / 360);
   camera.position.set(0, Math.cos(tilt) * dist, Math.sin(tilt) * dist + LOOK.z);
   camera.lookAt(LOOK.x, LOOK.y - 0.15, LOOK.z + 0.2);
+  // In MESOL's tray the board and dice sit a little high: the picture moves up by 8% of the tray, same size.
+  if (presentMode) camera.setViewOffset(w, h, 0, h * 0.08, w, h);
+  else camera.clearViewOffset();
   camera.updateProjectionMatrix();
   placeTags();
   requestRender();
@@ -234,13 +253,17 @@ function idleLayout(dice) {
   });
 }
 
-/** Make the board hold exactly `dice` (kinds and set); keeps meshes when nothing changed. */
-async function setBoardDice(dice, poses) {
-  const keyNow = currentSet + ':' + dice.map((d) => d.kind).join(',');
+/**
+ * Make the board hold exactly `dice` (kinds and set); keeps meshes when nothing changed. `sets` gives each die its
+ * own set (another mod's roll); without it every die wears the player's set.
+ */
+async function setBoardDice(dice, poses, sets = null) {
+  const setOf = (i) => (sets ? sets[i] : currentSet);
+  const keyNow = dice.map((d, i) => `${setOf(i)}:${d.kind}`).join(',');
   if (keyNow !== boardKey) {
-    const meshes = await Promise.all(dice.map((d) => makeDie(d.kind, currentSet)));
+    const meshes = await Promise.all(dice.map((d, i) => makeDie(d.kind, setOf(i))));
     board.forEach((b) => scene.remove(b.mesh));
-    board = dice.map((d, i) => ({ ...d, model: MODELS[d.kind], body: bodyOf(MODELS[d.kind]), mesh: meshes[i] }));
+    board = dice.map((d, i) => ({ ...d, set: setOf(i), model: MODELS[d.kind], body: bodyOf(MODELS[d.kind]), mesh: meshes[i] }));
     board.forEach((b) => scene.add(b.mesh));
     boardKey = keyNow;
   }
@@ -264,8 +287,9 @@ function placeTags() {
     el.innerHTML = '';
     return;
   }
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
   if (el.children.length !== tagData.length) {
     el.innerHTML = '';
     tagData.forEach((t) => {
@@ -282,8 +306,8 @@ function placeTags() {
     at.y += members[0].body.radius * 1.15;
     at.project(camera);
     const node = el.children[i];
-    node.style.left = `${((at.x + 1) / 2) * w}px`;
-    node.style.top = `${((1 - at.y) / 2) * h}px`;
+    node.style.left = `${rect.left + ((at.x + 1) / 2) * w}px`;
+    node.style.top = `${rect.top + ((1 - at.y) / 2) * h}px`;
     node.classList.add('on');
   });
 }
@@ -308,9 +332,10 @@ async function startWindup(id, counts) {
   anim.throwData = null;
   showTags([]);
   $('throw').classList.add('busy');
-  banner('Throwing...', '');
+  banner(presentMode && presentReason ? `Rolling for ${esc(presentReason)}...` : 'Throwing...', '');
   const dice = physicalDice(counts);
-  await setBoardDice(dice, board.length === dice.length ? null : idleLayout(dice));
+  // another mod's roll: every die in a different set, picked at random, so each throw looks new
+  await setBoardDice(dice, board.length === dice.length ? null : idleLayout(dice), presentMode ? randomSets(dice.length) : null);
   if (anim.id !== id) return;
   anim.from = board.map((b) => ({ p: b.p.clone(), q: b.q.clone() }));
   // The flight does not depend on the numbers, so it is simulated now and every die lifts to exactly where it will
@@ -439,7 +464,8 @@ function landed() {
     expected: anim.dice.map((d) => d.value),
     landed: board.map((b) => topFace(b.model, b.q).face.value),
     // every die wears its own picture of the current set
-    texturesOk: board.every((b) => b.mesh.userData.set === currentSet && b.mesh.material.map.source.data === b.mesh.userData.color),
+    texturesOk: board.every((b) => b.mesh.userData.set === (b.set || currentSet) && b.mesh.material.map.source.data === b.mesh.userData.color),
+    sets: board.map((b) => b.set || currentSet),
   };
   landedText(anim.counts, anim.values, true);
   addRecent(anim.counts, anim.values);
@@ -450,7 +476,9 @@ function landedText(counts, values, fresh) {
   const single = parts.length === 1;
   const crit = single && parts[0].type === 'd20' && parts[0].value === 20;
   const fumble = single && parts[0].type === 'd20' && parts[0].value === 1;
-  if (single) {
+  if (presentMode && presentReason) {
+    banner(`${esc(presentReason)}: ${n} = <b>${sum}</b>`, '', fresh);
+  } else if (single) {
     const note = crit ? '<span class="note">natural 20</span>' : fumble ? '<span class="note">natural 1</span>' : '';
     banner(`You rolled ${n === '1d20' ? '' : n + ': '}<b>${sum}</b>${note}`, crit ? 'crit' : fumble ? 'fumble' : '', fresh);
   } else {
@@ -689,6 +717,19 @@ function onState(s) {
     document.body.classList.toggle('closed', !open);
     if (open) requestRender();
   }
+  const present = !!(s.present && s.present.on) && !open;
+  presentReason = (s.present && s.present.reason) || '';
+  if (present !== presentMode) {
+    presentMode = present;
+    document.body.classList.toggle('present', present);
+    resize();
+    if (!present) {
+      // back to the player's own dice and set for the next time the board opens
+      const dice = physicalDice(Tray.counts(tray));
+      setBoardDice(dice, idleLayout(dice)).catch((e) => console.error('[RpRoll] could not reset the board', e));
+      showTags([]);
+    }
+  }
   // The page keeps the set (localStorage). Without storage it takes the game's copy, or the default.
   if (!storedSet() && s.set && s.set !== currentSet && byId(s.set)) useSet(s.set, false);
   if (s.pick) {
@@ -852,7 +893,12 @@ function fatal(text, error) {
 // ---------------------------------------------------------------------------------------------------------------
 // start
 
-let bridge = { mock: false, ready() {}, seen() {}, chooseSet() {}, chooseDice() {}, throwDice() {}, openChat() {}, close() {} };
+let bridge = { mock: false, ready() {}, seen() {}, chooseSet() {}, chooseDice() {}, throwDice() {}, openChat() {}, close() {}, lostFocus() {} };
+
+// In game a mouse click hands the keyboard to the game (UI-only input) and the board seems to hang. While the board is
+// open and has lost the keyboard, ask DiceTray.cs for it back (not while chat has it).
+window.addEventListener('blur', () => { if (open && !bridge.mock) bridge.lostFocus(); });
+setInterval(() => { if (open && !bridge.mock && !document.hasFocus()) bridge.lostFocus(); }, 500);
 
 async function start() {
   setTheme(storage.get(THEME_KEY), false);
@@ -873,6 +919,7 @@ async function start() {
   document.body.classList.remove('loading');
   requestRender();
   bridge = connect(onState);
+  if (bridge.mock) window.__rprollMock = bridge; // test/browser.mjs drives the stand-in server from here
   if (bridge.mock) setupMock();
   window.addEventListener('keydown', onKey);
   bridge.ready();

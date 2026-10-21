@@ -16,10 +16,12 @@ public readonly record struct DieResult(DieType Type, int Value);
 /// <param name="Dice">Each die and its value, in the same order as <paramref name="Groups"/>.</param>
 /// <param name="Total">Sum of all dice. A modifier would be added here later.</param>
 /// <param name="RolledAt">Server time of the roll, UTC.</param>
+/// <param name="Reason">What another mod rolled for ("Lazy"), or null for a player's own roll.</param>
 public sealed record RollResult(
     PlayerId Roller,
     string DiceSet,
     IReadOnlyList<DiceGroup> Groups,
     IReadOnlyList<DieResult> Dice,
     int Total,
-    DateTimeOffset RolledAt);
+    DateTimeOffset RolledAt,
+    string? Reason = null);

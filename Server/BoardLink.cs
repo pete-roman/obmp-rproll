@@ -50,6 +50,9 @@ public sealed partial class BoardLink
     /// <summary>Sends RpRollRpc.ToggleBoard to the player. Set by BoardLinkWiring.</summary>
     public Action<PlayerId>? SendToggle { get; set; }
 
+    /// <summary>Sends RpRollRpc.PresentRoll to the player (dice, values, reason). Set by BoardLinkWiring.</summary>
+    public Action<PlayerId, TrayPick, int[], string>? SendPresent { get; set; }
+
     public bool IsOpen(PlayerId player) => _open.Contains(player);
 
     public void SetOpen(PlayerId player, bool open)
@@ -68,6 +71,9 @@ public sealed partial class BoardLink
 
     public void Toggle(PlayerId player) => SendToggle?.Invoke(player);
 
+    /// <summary>Shows a roll the server already made (another mod's, see <see cref="RpRollApi"/>) on the player's screen.</summary>
+    public void Present(PlayerId player, TrayPick pick, int[] values, string reason) => SendPresent?.Invoke(player, pick, values, reason);
+
     internal IReadOnlyCollection<PlayerId> OpenBoards => _open.ToArray();
 }
 
@@ -79,5 +85,6 @@ public sealed partial class BoardLinkWiring(BoardLink board, RpRollRpcHandlers r
     {
         board.SendThrow = (player, pick) => rpc.SendTrayThrow(player, pick.D6, pick.D10, pick.D20, pick.D100);
         board.SendToggle = player => rpc.SendToggleBoard(player);
+        board.SendPresent = (player, pick, values, reason) => rpc.SendPresentRoll(player, reason, pick.D6, pick.D10, pick.D20, pick.D100, values);
     }
 }

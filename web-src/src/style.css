@@ -171,3 +171,29 @@ code { font-family: "Petrock", Georgia, serif; color: var(--ink); }
   .panel, .throw, #banner, .tag, .capacity span { transition: none; }
   #banner.pop { animation: none; }
 }
+/* Another mod's roll (MESOL's traits): a small board, no panels, no keys, in the dice tray at the bottom of MESOL's
+   right page. The box uses the same numbers as MESOL's .dice-tray (its style.css), so it sits exactly on it:
+   the book is two pages of min(46vw, 1180px) with 2vw between them, 5vh from the bottom (3.5vh below 900 px). */
+body.present {
+  background: transparent;
+  --page-w: min(46vw, 1180px); --tray-inner: calc(var(--page-w) - 6.8vmin);
+  --tray-h: min(42vh, calc(var(--page-w) * .62)); --tray-w: min(var(--tray-inner), calc(var(--tray-h) * 1.35));
+  --tray-right: calc(49vw - var(--page-w) + 3.4vmin + (var(--tray-inner) - var(--tray-w)) / 2);
+  --tray-bottom: calc(5vh + 9.5vmin);
+  /* inside the tray: a band at the top for MESOL's caption, one at the bottom for the result line */
+  --tray-top-band: 3.4vmin; --tray-result-band: 3.8vmin;
+}
+body.present .panel, body.present .throw, body.present .board-heading, body.present #mock { display: none !important; }
+body.present #view {
+  inset: auto; right: var(--tray-right); bottom: calc(var(--tray-bottom) + var(--tray-result-band)); width: var(--tray-w);
+  height: calc(var(--tray-h) - var(--tray-top-band) - var(--tray-result-band));
+  background: transparent;
+}
+body.present #banner {
+  top: auto; left: auto; transform: none; right: var(--tray-right); bottom: var(--tray-bottom);
+  width: var(--tray-w); height: var(--tray-result-band); padding: 0 .8em; display: flex; align-items: center; justify-content: center;
+  font-size: .9em; background: rgba(20, 24, 21, .62); border: 0;
+}
+@media (max-height: 900px) {
+  body.present { --tray-bottom: calc(3.5vh + 12vmin); --tray-h: min(36vh, calc(var(--page-w) * .62)); }
+}

@@ -209,14 +209,14 @@ public class TrayTests
             .Where(m => m.DeclaringType == typeof(RpRollRpc))
             .ToArray();
 
-        Assert.Equal(new[] { "BoardState", "DiceRefused", "DiceRolled", "RollDice", "ToggleBoard", "TrayThrow" },
+        Assert.Equal(new[] { "BoardState", "DiceRefused", "DiceRolled", "PresentRoll", "RollDice", "ToggleBoard", "TrayThrow" },
             contracts.Select(m => m.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.DoesNotContain(contracts, m => m.GetCustomAttribute<ClientToClientsAttribute>() is not null);
         foreach (string up in new[] { "RollDice", "BoardState" })
         {
             Assert.NotNull(typeof(RpRollRpc).GetMethod(up)!.GetCustomAttribute<ClientToServerAttribute>());
         }
-        foreach (string down in new[] { "DiceRolled", "DiceRefused", "ToggleBoard", "TrayThrow" })
+        foreach (string down in new[] { "DiceRolled", "DiceRefused", "ToggleBoard", "TrayThrow", "PresentRoll" })
         {
             Assert.NotNull(typeof(RpRollRpc).GetMethod(down)!.GetCustomAttribute<ServerToClientAttribute>());
         }

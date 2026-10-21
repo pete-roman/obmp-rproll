@@ -47,6 +47,8 @@ function gameBridge(onState) {
     throwDice: () => send('RpRollThrow'),
     openChat: () => send('RpRollChat'),
     close: () => send('RpRollClose'),
+    // the board is open but lost the keyboard (a mouse click gave it to the game): ask for it back
+    lostFocus: () => send('RpRollLostFocus'),
   };
 }
 
@@ -73,7 +75,7 @@ export function parseRoll(args) {
 function mockBridge(onState) {
   const COOLDOWN = 1500;
   const state = {
-    seq: 0, open: true, set: 'imperial',
+    seq: 0, open: true, set: 'imperial', present: { on: false, reason: '' },
     pick: { d6: 0, d10: 0, d20: 1, d100: 0, fromServer: 0 },
     roll: { id: 0, state: 'none', dice: { d6: 0, d10: 0, d20: 0, d100: 0 }, values: [], reason: '', ageMs: 0 },
   };
@@ -115,6 +117,20 @@ function mockBridge(onState) {
     openChat: () => {}, // the page's stand-in chat opens itself; in game the game does it
     close: () => change(() => { state.open = false; }),
     toggle: () => change(() => { state.open = !state.open; }),
+    // Another mod's roll, as DiceTray.cs shows it (RpRollRpc.PresentRoll): a small board over that mod's page for
+    // 6.5 s. counts like { d20: 5 }; values made up here, like the server's.
+    present: (reason, counts) => {
+      const dice = { d6: 0, d10: 0, d20: 0, d100: 0, ...counts };
+      const values = [];
+      for (const k of KINDS) for (let n = 0; n < dice[k]; n++) values.push(rollFace(k));
+      change(() => {
+        state.open = false;
+        state.present = { on: true, reason };
+        state.roll = { id: state.roll.id + 1, state: 'rolled', dice, values, reason: '', ageMs: 0 };
+      });
+      setTimeout(() => change(() => { state.present = { on: false, reason }; }), 6500);
+      return values;
+    },
     // first: 1 to sides to force the first die, or undefined for fair random dice (like the server)
     throwDice: (first) => {
       if (state.roll.state === 'pending') return;

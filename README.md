@@ -119,7 +119,7 @@ To target another OB:MP version, change `ObmpSdkVersion` and `ObmpChatVersion` i
 ## Tests
 
 ```powershell
-dotnet test RpRoll.slnx -c Release   # 100 unit tests: parser, roll, chat format, HUD filter, board rules
+dotnet test RpRoll.slnx -c Release   # 114 unit tests: parser, roll, chat format, HUD filter, board rules, rolls for other mods
 
 cd web-src
 node test/tray.test.mjs               # the tray rules
@@ -130,6 +130,19 @@ node test/browser.mjs                 # the built page in headless Chrome, drive
 `browser.mjs` needs Google Chrome. It looks in the default Windows location; set `CHROME_PATH` to use another one. `node test/browser.mjs --shots <folder>` also saves screenshots.
 
 These are automated tests outside the game. They don't replace a test on a server with real players.
+
+## For other mods
+
+Another server mod can roll through RpRoll. [MESOL](https://github.com/pete-roman/obmp-mesol-prototype), a lore card for roleplay, rolls its RP traits this way. Reference `RpRoll.Server.dll` without copying it (`Private="false"`), add `{ "uniqueId": "RpRoll", "minimumVersion": "0.8.5" }` to your manifest's dependencies, and inject `RpRollApi` into a `[Service]`:
+
+```csharp
+ModRoll roll = rpRoll.Roll(player, d6: 0, d10: 0, d20: 5, d100: 0, reason: "Lazy", showOnBoard: true);
+// roll.Values: each die, d6s first, then d10s, d20s, d100s; roll.Total: the sum
+```
+
+It is a normal RpRoll roll: the server rolls it, and players within 20 m see the reason in chat: `Pete rolled 5d20 for Lazy: d20 [6], d20 [1], d20 [17], d20 [11], d20 [15] = 50`. With `showOnBoard`, the player's screen shows the dice landing on those numbers in a small board that closes by itself after about 6 seconds. Each die gets a different dice set, picked at random. If the board is open, the dice land on it instead. The small board takes no keys, so the other mod's page keeps the keyboard. It sits in the bottom right of the screen, sized to MESOL's dice tray (the numbers are in `body.present` in `web-src/src/style.css`). The reason keeps letters, digits, spaces, apostrophes and hyphens, up to 40 characters.
+
+A mod whose page has a text box can set `AppDomain.CurrentDomain.SetData("OBMP.TextInputActive", true)` while the player types. Home then does nothing, so Home moves the caret in that box instead of opening the board. RpRoll sets `"RpRoll.BoardOpen"` while its board is open.
 
 ## Try the board in a browser
 
@@ -142,6 +155,14 @@ After `node build.mjs`, open `Client/web/index.html` in a normal browser. Withou
 **Works** (tested in game by the author on a local OB:MP 1.0.0-rc.2 server, as version 0.6.1): `/roll` with all four dice, results in chat and in the HUD, the dice board with all 12 sets, light and dark, every key listed above, `/roll` and `/board` with the board open.
 
 **Version 0.7.0** is 0.6.1 with three things removed that only made sense during development: a server-side test hook that ran rolls from a file, a chat diagnostic that logged every chat line, and F7, a hard-coded `2d6` key from the first prototype (the OB:MP 1.0 docs also list F7 as used by the game). 0.7.0 passes the automated tests above; it has not been tested in game yet.
+
+**Version 0.8.5** adds the following:
+
+- **Rolls for other mods** (see [For other mods](#for-other-mods)): a reason in the chat line and a small board that shows another mod's roll, with every die in a random set. Tested in game by the author with MESOL's trait rolls.
+- **Home** leaves another page's text box alone.
+- **No mouse pointer:** the pointer is hidden while the board is open. OB:MP 1.0 pages take no mouse, and a click used to leave the board without the keyboard; the board now takes the keyboard back.
+
+The automated tests above pass.
 
 **Known limits**
 

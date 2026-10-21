@@ -21,6 +21,9 @@ public sealed partial class RpRollClientRpc(ILogger logger)
     /// <summary>d6, d10, d20, d100 to put in the tray before throwing; all zero: throw the tray as it is.</summary>
     public event Action<int, int, int, int>? Throw;
 
+    /// <summary>A roll the server made for another mod: reason, d6, d10, d20, d100 and the values to show.</summary>
+    public event Action<string, int, int, int, int, int[]>? Present;
+
     partial void OnDiceRolled(long requestId, int[] values)
     {
         logger.LogInformation("[RpRoll] Tray #{RequestId} from the server: {Values}", requestId, string.Join(", ", values));
@@ -43,6 +46,12 @@ public sealed partial class RpRollClientRpc(ILogger logger)
     {
         logger.LogInformation("[RpRoll] /roll from chat for the board: {D6} d6, {D10} d10, {D20} d20, {D100} d100.", d6, d10, d20, d100);
         Raise(() => Throw?.Invoke(d6, d10, d20, d100));
+    }
+
+    partial void OnPresentRoll(string reason, int d6, int d10, int d20, int d100, int[] values)
+    {
+        logger.LogInformation("[RpRoll] A roll for {Reason} to show: {Values}", reason, string.Join(", ", values));
+        Raise(() => Present?.Invoke(reason, d6, d10, d20, d100, values));
     }
 
     private void Raise(Action raise)

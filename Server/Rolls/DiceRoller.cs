@@ -23,6 +23,6 @@ public static class DiceRoller
                 total += value;
             }
         }
-        return new RollResult(request.Roller, diceSet, request.Groups, dice, total, now);
+        return new RollResult(request.Roller, diceSet, request.Groups, dice, total, now, request.Reason);
     }
 }

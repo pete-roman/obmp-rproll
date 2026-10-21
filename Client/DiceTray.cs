@@ -22,6 +22,13 @@ namespace RpRoll.Client;
 /// dice on 1-5 and asks for chat on K (<see cref="OnRpRollChat"/>). While the board is closed none of that exists and
 /// the keys are the game's. While chat is open, chat's page has the keyboard, so typing never reaches the board.
 ///
+/// Another mod's roll (<see cref="RpRollClientRpc.Present"/>, MESOL's traits): the server already rolled it. With the
+/// board closed, the page shows it as a small board over everything else, without taking the keyboard, and hides again
+/// after <see cref="PresentSeconds"/>; with the board open, the dice simply land on the board.
+///
+/// Typing elsewhere: a mod whose page takes text (MESOL) sets <see cref="TextInputKey"/> in the AppDomain while the
+/// player types, and Home then does nothing, so Home in a text box moves the caret instead of opening the board.
+///
 /// Game to page: the whole state as one JSON message, sent on every change and again a few times after it, which the
 /// page reconciles idempotently. Page to game: the dice pick, Space, K and Escape; the state carries back what Space
 /// would throw, so the page sees and repeats a pick that got lost.
@@ -31,8 +38,20 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
 {
     private const string Host = "rproll";
 
-    // Above chat's bar (zOrder 0): the board is full screen while it is open.
-    private const int ZOrder = 5;
+    // Above chat's bar (0) and MESOL's card page (6): the board, and another mod's roll, show on top.
+    private const int ZOrder = 7;
+
+    /// <summary>How long another mod's roll stays on screen: the throw (about 4 s) and a moment to read it.</summary>
+    private const double PresentSeconds = 6.5;
+
+    /// <summary>
+    /// AppDomain data slot that is <c>true</c> while some mod's page has a text box with the keyboard. Shared by name, so
+    /// no mod needs a reference to another.
+    /// </summary>
+    public const string TextInputKey = "OBMP.TextInputActive";
+
+    /// <summary>AppDomain data slot that is <c>true</c> while the board is open, for other mods' keys.</summary>
+    public const string BoardOpenKey = "RpRoll.BoardOpen";
 
     // Resends after a change, in seconds. Covers a page that is still loading and messages that got lost.
     private static readonly double[] Resends = { 0.25, 0.75, 2.0, 4.0 };
@@ -66,6 +85,11 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
     private string _set = DefaultSet;
     private double _changedAt;
     private int _resendIndex = Resends.Length;
+    private bool _present;
+    private string _presentReason = string.Empty;
+    private double _presentUntil;
+    private double _cursorHiddenAt;
+    private double _refocusedAt;
 
     public const string DefaultSet = "imperial";
 
@@ -93,6 +117,7 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
         rpc.Refused += OnRefused;
         rpc.Toggle += OnToggleFromChat;
         rpc.Throw += OnThrowFromChat;
+        rpc.Present += OnPresent;
 
         // Polled: with UnhandledByUi the key never reached us in game, and Polled also fires while
         // our own page holds the keyboard, which Home needs to close it.
@@ -116,6 +141,7 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
         rpc.Refused -= OnRefused;
         rpc.Toggle -= OnToggleFromChat;
         rpc.Throw -= OnThrowFromChat;
+        rpc.Present -= OnPresent;
         _homeBind?.Dispose();
     }
 
@@ -132,6 +158,16 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
             Guard("back to the board", () => cef.SetFocused(_viewport, true));
         }
         _chatWasOpen = chatOpen;
+        // UI-only input brings the cursor back now and then; the board takes no mouse, so keep hiding it.
+        if (_open && !chatOpen && Now - _cursorHiddenAt > 0.25)
+        {
+            _cursorHiddenAt = Now;
+            Guard("hiding the cursor", () => cef.SetCursorVisible(false));
+        }
+        if (_present && Now >= _presentUntil)
+        {
+            Guard("hiding a shown roll", EndPresent);
+        }
         if (_resendIndex < Resends.Length && Now - _changedAt >= Resends[_resendIndex])
         {
             _resendIndex++;
@@ -143,9 +179,9 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
     {
         Guard("Home", () =>
         {
-            if (chat.IsOpen)
+            if (chat.IsOpen || TextInputActive())
             {
-                return; // Home in chat's entry line belongs to chat
+                return; // Home in chat's entry line, or in another page's text box, moves the caret there
             }
             SetOpen(!_open);
         });
@@ -184,6 +220,42 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
             Throw();
         });
     }
+
+    private void OnPresent(string reason, int d6, int d10, int d20, int d100, int[] values)
+    {
+        Guard("showing a roll", () =>
+        {
+            Pick pick = new(d6, d10, d20, d100);
+            if (!pick.Valid || values.Length != pick.Total)
+            {
+                logger.LogWarning("[RpRoll] Ignored a roll to show: {D6} d6, {D10} d10, {D20} d20, {D100} d100, {Count} values.", d6, d10, d20, d100, values.Length);
+                return;
+            }
+            _rollId = _nextRequestId++;
+            _rollDice = pick;
+            _presentReason = reason ?? string.Empty;
+            if (!_open)
+            {
+                // Shown on top, but the keyboard stays where it is (another mod's page, or the game).
+                _present = true;
+                _presentUntil = Now + PresentSeconds;
+                cef.SetVisible(_viewport, true);
+            }
+            SetRoll("rolled", values, string.Empty);
+        });
+    }
+
+    private void EndPresent()
+    {
+        _present = false;
+        if (!_open)
+        {
+            cef.SetVisible(_viewport, false);
+        }
+        Changed();
+    }
+
+    private static bool TextInputActive() => AppDomain.CurrentDomain.GetData(TextInputKey) is true;
 
     private void Throw()
     {
@@ -227,11 +299,17 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
     private void SetOpen(bool open)
     {
         _open = open;
+        _present = false; // opening the board takes over a shown roll; closing it ends one
+        AppDomain.CurrentDomain.SetData(BoardOpenKey, open); // so another mod's key (MESOL's End) leaves the board alone
         cef.SetVisible(_viewport, open);
         // The page takes the keyboard while it is open, and the game gets no input at all (UI-only), so Space and
         // 1-5 neither jump nor fire a quick key. Home is Polled, so closing never depends on the page.
         cef.SetFocused(_viewport, open);
         cef.SetUiInputMode(open);
+        if (open)
+        {
+            cef.SetCursorVisible(false); // keys only: UI-only input would show a cursor the page cannot use
+        }
         rpc.SendBoardState(open); // so /roll from chat throws on the board while it is open
         Changed();
     }
@@ -265,6 +343,7 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
             {
                 seq = _seq,
                 open = _open,
+                present = new { on = _present, reason = _presentReason },
                 set = _set,
                 // what Space throws now: the page's last pick that arrived, or what /roll put in the tray
                 pick = new { d6 = _pick.D6, d10 = _pick.D10, d20 = _pick.D20, d100 = _pick.D100, fromServer = _pickFromServer },
@@ -377,6 +456,23 @@ public sealed partial class DiceTray(CefHost cef, IInput input, IChat chat, RpRo
             cef.SetFocused(_viewport, false);
             chat.Open();
             _chatWasOpen = true;
+        });
+    }
+
+    /// <summary>The open board lost the keyboard (a mouse click hands it to the game in UI-only input): give it back.</summary>
+    [ReceiveFromCef]
+    private void OnRpRollLostFocus(BrowserHandle page)
+    {
+        Guard("getting the keyboard back", () =>
+        {
+            if (!_open || chat.IsOpen || Now - _refocusedAt < 0.3)
+            {
+                return;
+            }
+            _refocusedAt = Now;
+            cef.SetFocused(_viewport, true);
+            cef.SetPageFocused(page, true);
+            cef.SetCursorVisible(false);
         });
     }
 
